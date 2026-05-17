@@ -1,0 +1,4 @@
+.env
+*.log
+grafana_data/
+portainer_data/

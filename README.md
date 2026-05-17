@@ -123,7 +123,8 @@ docker ps
 | Prometheus          | 9090    |
 | Portainer           | 9000    |
 | Uptime Kuma         | 3001    |
-
+| node-exporter       | 9100    |
+| cadAdvisor          | 8081    |
 ---
 
 # Monitoring Stack
