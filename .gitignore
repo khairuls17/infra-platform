@@ -1,4 +1,12 @@
 .env
 *.log
+
+
+
+uptime/
+
 grafana_data/
 portainer_data/
+
+*.db
+*.sqlite
