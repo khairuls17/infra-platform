@@ -1,0 +1,21 @@
+# docker-compose.override.yml
+# Local development overrides for Codespaces
+# This file will be automatically used when running: docker-compose up
+# For production: docker-compose -f docker-compose.yml -f docker-compose.prod.yml up
+
+version: '3.8'
+
+services:
+  nginx:
+    ports:
+      - "8080:80"
+    # Note: Uses default.prod.conf from docker-compose.prod.yml
+    # For subdomain testing locally, add to /etc/hosts:
+    # 127.0.0.1 grafana.localhost
+    # 127.0.0.1 portainer.localhost
+    # 127.0.0.1 status.localhost
+    # Then access: http://grafana.localhost:8080
+    
+  grafana:
+    environment:
+      - GF_SERVER_ROOT_URL=http://grafana.localhost:8080/

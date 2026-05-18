@@ -1,0 +1,276 @@
+# Nginx Production Config Template (dengan environment variable support)
+# Usage: envsubst < default.prod.conf.template > default.prod.conf
+
+# Redirect HTTP to HTTPS
+server {
+    listen 80;
+    server_name _;
+    
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+    
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+# Main domain - Gateway/Info page
+server {
+    listen 443 ssl http2;
+    server_name ~^(?!grafana\.|portainer\.|status\.|prometheus\.).*$;
+    
+    # SSL certificates
+    ssl_certificate /etc/nginx/certs/fullchain.pem;
+    ssl_certificate_key /etc/nginx/certs/privkey.pem;
+    
+    # SSL security settings
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+    ssl_prefer_server_ciphers on;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 10m;
+    
+    # Security headers
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    
+    location / {
+        default_type text/html;
+        return 200 '
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Infra Platform</title>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <style>
+                    * { margin: 0; padding: 0; }
+                    body { 
+                        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        min-height: 100vh;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        padding: 20px;
+                    }
+                    .container {
+                        background: white;
+                        border-radius: 10px;
+                        box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+                        padding: 40px;
+                        max-width: 600px;
+                        text-align: center;
+                    }
+                    h1 { color: #333; margin-bottom: 10px; font-size: 2em; }
+                    .subtitle { color: #666; margin-bottom: 30px; }
+                    .services {
+                        display: grid;
+                        gap: 15px;
+                        margin: 30px 0;
+                    }
+                    .service-link {
+                        display: flex;
+                        align-items: center;
+                        justify-content: space-between;
+                        padding: 15px;
+                        background: #f5f5f5;
+                        border-radius: 8px;
+                        text-decoration: none;
+                        color: #333;
+                        transition: all 0.3s;
+                        border-left: 4px solid #667eea;
+                    }
+                    .service-link:hover {
+                        background: #efefef;
+                        transform: translateX(5px);
+                    }
+                    .service-name { font-weight: bold; }
+                    .service-desc { font-size: 0.9em; color: #666; }
+                    .service-icon { font-size: 1.5em; }
+                    hr { margin: 30px 0; border: none; border-top: 1px solid #eee; }
+                    footer { color: #999; font-size: 0.9em; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <h1>🚀 Infra Platform</h1>
+                    <p class="subtitle">Infrastructure & DevOps Learning Lab</p>
+                    
+                    <div class="services">
+                        <a href="https://grafana.${DOMAIN_NAME}" class="service-link">
+                            <span>
+                                <div class="service-icon">📊</div>
+                                <div class="service-name">Grafana</div>
+                                <div class="service-desc">Monitoring Dashboard</div>
+                            </span>
+                        </a>
+                        <a href="https://portainer.${DOMAIN_NAME}" class="service-link">
+                            <span>
+                                <div class="service-icon">🐳</div>
+                                <div class="service-name">Portainer</div>
+                                <div class="service-desc">Container Management</div>
+                            </span>
+                        </a>
+                        <a href="https://status.${DOMAIN_NAME}" class="service-link">
+                            <span>
+                                <div class="service-icon">⏱️</div>
+                                <div class="service-name">Uptime Kuma</div>
+                                <div class="service-desc">Status Page & Monitoring</div>
+                            </span>
+                        </a>
+                    </div>
+                    
+                    <hr>
+                    <footer>
+                        <p>Built with <strong>Docker • Nginx • Prometheus • Grafana</strong></p>
+                        <p><a href="https://github.com/khairuls17/infra-platform" style="color: #667eea; text-decoration: none;">View on GitHub →</a></p>
+                    </footer>
+                </div>
+            </body>
+            </html>
+        ';
+    }
+    
+    location /health {
+        default_type text/plain;
+        return 200 'OK';
+    }
+}
+
+# ============================================
+# Grafana Subdomain
+# ============================================
+server {
+    listen 443 ssl http2;
+    server_name grafana.${DOMAIN_NAME};
+    
+    ssl_certificate /etc/nginx/certs/fullchain.pem;
+    ssl_certificate_key /etc/nginx/certs/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+    ssl_prefer_server_ciphers on;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 10m;
+    
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    
+    location / {
+        proxy_pass http://grafana:3000/;
+        proxy_http_version 1.1;
+        
+        proxy_set_header Host grafana:3000;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $host;
+        
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+    }
+}
+
+# ============================================
+# Portainer Subdomain
+# ============================================
+server {
+    listen 443 ssl http2;
+    server_name portainer.${DOMAIN_NAME};
+    
+    ssl_certificate /etc/nginx/certs/fullchain.pem;
+    ssl_certificate_key /etc/nginx/certs/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+    ssl_prefer_server_ciphers on;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 10m;
+    
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    
+    client_max_body_size 100M;
+    
+    location / {
+        proxy_pass http://portainer:9000/;
+        proxy_http_version 1.1;
+        
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+    }
+}
+
+# ============================================
+# Uptime Kuma (Status) Subdomain
+# ============================================
+server {
+    listen 443 ssl http2;
+    server_name status.${DOMAIN_NAME};
+    
+    ssl_certificate /etc/nginx/certs/fullchain.pem;
+    ssl_certificate_key /etc/nginx/certs/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+    ssl_prefer_server_ciphers on;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 10m;
+    
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    
+    location / {
+        proxy_pass http://uptime-kuma:3001/;
+        proxy_http_version 1.1;
+        
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+    }
+}
+
+# ============================================
+# Prometheus (Internal/Restricted)
+# ============================================
+server {
+    listen 443 ssl http2;
+    server_name prometheus.${DOMAIN_NAME};
+    
+    ssl_certificate /etc/nginx/certs/fullchain.pem;
+    ssl_certificate_key /etc/nginx/certs/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+    
+    location / {
+        proxy_pass http://prometheus:9090/;
+        proxy_http_version 1.1;
+        
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}

@@ -1,12 +1,64 @@
+# Environment
 .env
+.env.local
+.env.*.local
+.env.production
+
+# Secrets & SSL
+.secrets/
+certs/
+ssl/
+tls/
+*.pem
+*.key
+*.crt
+
+# Data volumes
 *.log
-
-
-
 uptime/
-
 grafana_data/
 portainer_data/
+prometheus_data/
 
+# Databases
 *.db
 *.sqlite
+*.sqlite3
+
+# Backups
+backup/
+backups/
+*.tar.gz
+*.tar
+*.zip
+*.bak
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node/Python
+node_modules/
+venv/
+.venv/
+
+# Terraform
+terraform/.terraform/
+terraform/terraform.tfstate*
+terraform/.tfvars
+
+# Docker
+.dockerignore
+docker-compose.override.local.yml
+
+# Temp files
+tmp/
+temp/
+*.tmp
