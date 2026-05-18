@@ -41,21 +41,6 @@ Jangan hanya "copy-paste dan run"! Saya telah siapkan comprehensive guides untuk
 
 # 🚀 Deployment Options
 
-
-## Local Development (Codespaces/Desktop)
-
-Gunakan subpath routing dengan Nginx:
-- http://localhost:8080/grafana
-- http://localhost:8080/prometheus
-- http://localhost:8080/status
-- http://localhost:8080/portainer
-
-```bash
-docker-compose up -d
-```
-
-**Docs:** [Local Setup](docs/LOCAL_SETUP.md)
-
 ## Production (VPS + Cloudflare)
 
 Gunakan subdomain routing dengan Let's Encrypt SSL:
