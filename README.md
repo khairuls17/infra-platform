@@ -353,7 +353,6 @@ Planned features:
 
 | File | Purpose |
 |------|---------|
-| [docker-compose.yml](docker-compose.yml) | Local development setup |
 | [docker-compose.prod.yml](docker-compose.prod.yml) | Production setup (with healthchecks, resources) |
 | [docker-compose.override.yml](docker-compose.override.yml) | Local overrides for Codespaces |
 | [.env.example](.env.example) | Environment variables template |
